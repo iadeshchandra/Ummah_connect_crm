@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.trackiq.ummah">
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
+        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
+    <application
+        android:name=".UmmahConnectApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.UmmahConnect"
+        tools:targetApi="31">
+
+        <!-- Splash Activity -->
+        <activity
+            android:name=".ui.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.UmmahConnect.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Authentication Activities -->
+        <activity
+            android:name=".ui.auth.AdminLoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+            
+        <activity
+            android:name=".ui.auth.StaffLoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+            
+        <activity
+            android:name=".ui.auth.PinGenerationActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Main Dashboard -->
+        <activity
+            android:name=".ui.main.DashboardActivity"
+            android:exported="false"
+            android:launchMode="singleTask" />
+
+        <!-- Member Management -->
+        <activity
+            android:name=".ui.members.MemberListActivity"
+            android:exported="false" />
+            
+        <activity
+            android:name=".ui.members.MemberDetailActivity"
+            android:exported="false" />
+            
+        <activity
+            android:name=".ui.members.AddEditMemberActivity"
+            android:exported="false" />
+
+        <!-- Guest/Musallee Management -->
+        <activity
+            android:name=".ui.guests.GuestListActivity"
+            android:exported="false" />
+            
+        <activity
+            android:name=".ui.guests.AddEditGuestActivity"
+            android:exported="false" />
+
+        <!-- Ledger/Finance -->
+        <activity
+            android:name=".ui.ledger.LedgerActivity"
+            android:exported="false" />
+            
+        <activity
+            android:name=".ui.ledger.AddTransactionActivity"
+            android:exported="false" />
+            
+        <activity
+            android:name=".ui.ledger.DeepScannerActivity"
+            android:exported="false" />
+
+        <!-- PDF Reports -->
+        <activity
+            android:name=".ui.reports.PdfReportsActivity"
+            android:exported="false" />
+
+        <!-- Communications -->
+        <activity
+            android:name=".ui.comms.AnnouncementsActivity"
+            android:exported="false" />
+            
+        <activity
+            android:name=".ui.comms.ShuraPollsActivity"
+            android:exported="false" />
+
+        <!-- Calendar -->
+        <activity
+            android:name=".ui.calendar.HijriCalendarActivity"
+            android:exported="false" />
+
+        <!-- Audit Log -->
+        <activity
+            android:name=".ui.audit.AuditLogActivity"
+            android:exported="false" />
+
+        <!-- Firebase Messaging Service -->
+        <service
+            android:name=".service.UmmahMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+    </application>
+
+</manifest>
