@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Islamic Colors -->
+    <color name="islamic_green">#1E5631</color>
+    <color name="islamic_green_light">#2E7D32</color>
+    <color name="islamic_green_dark">#0D3318</color>
+    
+    <!-- Gold Accents -->
+    <color name="islamic_gold">#D4AF37</color>
+    <color name="islamic_gold_light">#F4D03F</color>
+    <color name="islamic_gold_dark">#B8860B</color>
+    
+    <!-- Spiritual Blue -->
+    <color name="islamic_blue">#1F4788</color>
+    <color name="islamic_blue_light">#3498DB</color>
+    <color name="islamic_blue_dark">#154360</color>
+    
+    <!-- Background & Surface -->
+    <color name="cream_background">#FDF5E6</color>
+    <color name="sage_background">#E8F5E9</color>
+    <color name="white">#FFFFFF</color>
+    <color name="off_white">#FAFAFA</color>
+    
+    <!-- Text Colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#9E9E9E</color>
+    <color name="text_on_dark">#FFFFFF</color>
+    
+    <!-- Status Colors -->
+    <color name="success_green">#4CAF50</color>
+    <color name="warning_amber">#FFC107</color>
+    <color name="error_red">#C62828</color>
+    <color name="info_blue">#1976D2</color>
+    
+    <!-- Ledger Specific -->
+    <color name="donation_income">#2E7D32</color>
+    <color name="expense_outflow">#C62828</color>
+    <color name="zakat_gold">#FFD700</color>
+    <color name="sadaqah_green">#27AE60</color>
+    
+    <!-- Member/Guest Status -->
+    <color name="status_active">#4CAF50</color>
+    <color name="status_inactive">#9E9E9E</color>
+    <color name="status_guest">#FF9800</color>
+    <color name="status_vip">#D4AF37</color>
+</resources>
