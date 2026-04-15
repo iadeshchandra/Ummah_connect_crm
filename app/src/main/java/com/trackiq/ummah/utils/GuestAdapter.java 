@@ -1,0 +1,112 @@
+package com.trackiq.ummah.utils;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.trackiq.ummah.R;
+import com.trackiq.ummah.model.Guest;
+
+import java.util.List;
+
+/**
+ * GuestAdapter - RecyclerView adapter for guest list
+ */
+public class GuestAdapter extends RecyclerView.Adapter<GuestAdapter.GuestViewHolder> {
+
+    private List<Guest> guests;
+    private OnGuestClickListener listener;
+
+    public interface OnGuestClickListener {
+        void onGuestClick(Guest guest);
+    }
+
+    public GuestAdapter(List<Guest> guests, OnGuestClickListener listener) {
+        this.guests = guests;
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public GuestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_guest, parent, false);
+        return new GuestViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull GuestViewHolder holder, int position) {
+        Guest guest = guests.get(position);
+        holder.bind(guest, listener);
+    }
+
+    @Override
+    public int getItemCount() {
+        return guests.size();
+    }
+
+    static class GuestViewHolder extends RecyclerView.ViewHolder {
+        private CardView cardView;
+        private TextView tvId;
+        private TextView tvName;
+        private TextView tvPhone;
+        private TextView tvType;
+        private TextView tvVisits;
+
+        public GuestViewHolder(@NonNull View itemView) {
+            super(itemView);
+            cardView = itemView.findViewById(R.id.cardView);
+            tvId = itemView.findViewById(R.id.tvId);
+            tvName = itemView.findViewById(R.id.tvName);
+            tvPhone = itemView.findViewById(R.id.tvPhone);
+            tvType = itemView.findViewById(R.id.tvType);
+            tvVisits = itemView.findViewById(R.id.tvVisits);
+        }
+
+        public void bind(Guest guest, OnGuestClickListener listener) {
+            // Set ID with GST- prefix
+            tvId.setText(guest.getDisplayId());
+
+            // Set name
+            tvName.setText(guest.getName());
+
+            // Set phone
+            tvPhone.setText(guest.getPhone() != null ? guest.getPhone() : "No phone");
+
+            // Set type with color
+            String type = guest.getType();
+            tvType.setText(guest.getTypeDisplay());
+
+            int typeColor;
+            switch (type != null ? type.toLowerCase() : "regular") {
+                case "visitor":
+                    typeColor = R.color.status_guest;
+                    break;
+                case "new_muslim":
+                    typeColor = R.color.success_green;
+                    break;
+                case "regular":
+                default:
+                    typeColor = R.color.islamic_blue;
+            }
+            tvType.setTextColor(ContextCompat.getColor(itemView.getContext(), typeColor));
+
+            // Set visit count
+            int visits = guest.getVisitCount();
+            tvVisits.setText(visits + (visits == 1 ? " visit" : " visits"));
+
+            // Click listener
+            cardView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onGuestClick(guest);
+                }
+            });
+        }
+    }
+}
