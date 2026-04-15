@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        
+        <item
+            android:id="@+id/nav_members"
+            android:icon="@android:drawable/ic_menu_myplaces"
+            android:title="@string/menu_members" />
+            
+        <item
+            android:id="@+id/nav_guests"
+            android:icon="@android:drawable/ic_menu_sort_by_size"
+            android:title="@string/menu_guests" />
+            
+        <item
+            android:id="@+id/nav_ledger"
+            android:icon="@android:drawable/ic_menu_agenda"
+            android:title="@string/menu_ledger" />
+            
+        <item
+            android:id="@+id/nav_reports"
+            android:icon="@android:drawable/ic_menu_save"
+            android:title="@string/menu_reports" />
+            
+        <item
+            android:id="@+id/nav_announcements"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="@string/menu_announcements" />
+            
+        <item
+            android:id="@+id/nav_calendar"
+            android:icon="@android:drawable/ic_menu_month"
+            android:title="@string/menu_calendar" />
+
+    </group>
+
+    <item android:title="Administration">
+        <menu>
+            <item
+                android:id="@+id/nav_audit"
+                android:icon="@android:drawable/ic_menu_recent_history"
+                android:title="@string/menu_audit" />
+        </menu>
+    </item>
+
+    <item android:title="Session">
+        <menu>
+            <item
+                android:id="@+id/nav_logout"
+                android:icon="@android:drawable/ic_menu_close_clear_cancel"
+                android:title="@string/menu_logout" />
+        </menu>
+    </item>
+
+</menu>
