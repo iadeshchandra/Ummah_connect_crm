@@ -1,0 +1,254 @@
+package com.trackiq.ummah.ui.auth;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.trackiq.ummah.R;
+import com.trackiq.ummah.UmmahConnectApp;
+import com.trackiq.ummah.databinding.ActivityStaffLoginBinding;
+import com.trackiq.ummah.ui.main.DashboardActivity;
+import com.trackiq.ummah.utils.AuditLogger;
+
+/**
+ * StaffLoginActivity - Workspace ID + PIN Authentication
+ * 
+ * Features:
+ * - Workspace ID lookup in Firebase
+ * - Secure PIN validation
+ * - Offline cache fallback
+ * - PIN generation redirect if missing
+ */
+public class StaffLoginActivity extends AppCompatActivity {
+
+    private ActivityStaffLoginBinding binding;
+    private FirebaseDatabase database;
+    private UmmahConnectApp app;
+    private boolean isOfflineMode = false;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        binding = ActivityStaffLoginBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        
+        database = FirebaseDatabase.getInstance();
+        app = UmmahConnectApp.getInstance();
+        
+        isOfflineMode = getIntent().getBooleanExtra("offline_mode", false);
+        
+        setupUI();
+    }
+
+    private void setupUI() {
+        binding.btnLogin.setOnClickListener(v -> attemptLogin());
+        binding.btnGeneratePin.setOnClickListener(v -> {
+            startActivity(new Intent(this, PinGenerationActivity.class));
+        });
+        binding.tvAdminLogin.setOnClickListener(v -> {
+            startActivity(new Intent(this, AdminLoginActivity.class));
+            finish();
+        });
+        binding.btnToggleMode.setOnClickListener(v -> toggleOfflineMode());
+        
+        if (isOfflineMode) {
+            showOfflineModeUI();
+        }
+    }
+
+    private void toggleOfflineMode() {
+        isOfflineMode = !isOfflineMode;
+        if (isOfflineMode) {
+            showOfflineModeUI();
+        } else {
+            showOnlineModeUI();
+        }
+    }
+
+    private void showOfflineModeUI() {
+        binding.tvModeIndicator.setText(R.string.offline_mode);
+        binding.tvModeIndicator.setVisibility(View.VISIBLE);
+        binding.etWorkspaceId.setEnabled(false);
+        binding.etPin.setEnabled(false);
+        binding.btnLogin.setText(R.string.cache_login);
+        
+        String cachedWorkspace = app.getPreferences().getString("staff_workspace", null);
+        if (cachedWorkspace != null) {
+            binding.etWorkspaceId.setText(cachedWorkspace);
+            binding.tvOfflineHint.setText("Cached: " + cachedWorkspace);
+            binding.tvOfflineHint.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void showOnlineModeUI() {
+        binding.tvModeIndicator.setVisibility(View.GONE);
+        binding.etWorkspaceId.setEnabled(true);
+        binding.etPin.setEnabled(true);
+        binding.btnLogin.setText(R.string.btn_login);
+        binding.tvOfflineHint.setVisibility(View.GONE);
+    }
+
+    private void attemptLogin() {
+        if (isOfflineMode) {
+            attemptOfflineLogin();
+        } else {
+            attemptOnlineLogin();
+        }
+    }
+
+    /**
+     * Online login with Firebase Realtime Database
+     */
+    private void attemptOnlineLogin() {
+        String workspaceId = binding.etWorkspaceId.getText().toString().trim();
+        String pin = binding.etPin.getText().toString().trim();
+
+        if (workspaceId.isEmpty() || pin.isEmpty()) {
+            Toast.makeText(this, "Enter Workspace ID and PIN", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        binding.progressBar.setVisibility(View.VISIBLE);
+        binding.btnLogin.setEnabled(false);
+
+        DatabaseReference staffRef = database.getReference("staff").child(workspaceId);
+        
+        staffRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                binding.progressBar.setVisibility(View.GONE);
+                binding.btnLogin.setEnabled(true);
+
+                if (!snapshot.exists()) {
+                    Toast.makeText(StaffLoginActivity.this, 
+                            "Workspace ID not found", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                String storedPin = snapshot.child("pin").getValue(String.class);
+                String staffName = snapshot.child("name").getValue(String.class);
+                Boolean isActive = snapshot.child("active").getValue(Boolean.class);
+
+                if (isActive != null && !isActive) {
+                    Toast.makeText(StaffLoginActivity.this, 
+                            "Account deactivated", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (storedPin == null) {
+                    // No PIN set - redirect to generation
+                    new AlertDialog.Builder(StaffLoginActivity.this)
+                            .setTitle("PIN Not Set")
+                            .setMessage("Generate a new PIN for this workspace?")
+                            .setPositiveButton("Generate", (d, w) -> {
+                                Intent intent = new Intent(StaffLoginActivity.this, 
+                                        PinGenerationActivity.class);
+                                intent.putExtra("workspace_id", workspaceId);
+                                startActivity(intent);
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                    return;
+                }
+
+                if (pin.equals(storedPin)) {
+                    // Success - cache and proceed
+                    cacheStaffCredentials(workspaceId, pin, staffName);
+                    
+                    AuditLogger.log(StaffLoginActivity.this, AuditLogger.ACTION_LOGIN, 
+                            "Staff login: " + workspaceId);
+                    
+                    startActivity(new Intent(StaffLoginActivity.this, 
+                            DashboardActivity.class));
+                    finish();
+                } else {
+                    Toast.makeText(StaffLoginActivity.this, 
+                            "Invalid PIN", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                binding.progressBar.setVisibility(View.GONE);
+                binding.btnLogin.setEnabled(true);
+                
+                if (error.getCode() == DatabaseError.DISCONNECTED || 
+                    error.getCode() == DatabaseError.NETWORK_ERROR) {
+                    new AlertDialog.Builder(StaffLoginActivity.this)
+                            .setTitle("Network Error")
+                            .setMessage("Switch to offline mode?")
+                            .setPositiveButton("Offline Mode", (d, w) -> {
+                                isOfflineMode = true;
+                                showOfflineModeUI();
+                            })
+                            .setNegativeButton("Retry", null)
+                            .show();
+                } else {
+                    Toast.makeText(StaffLoginActivity.this, 
+                            "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    /**
+     * Offline login using cached credentials
+     */
+    private void attemptOfflineLogin() {
+        String cachedWorkspace = app.getPreferences().getString("staff_workspace", null);
+        String cachedPinHash = app.getPreferences().getString("staff_pin_hash", null);
+        
+        if (cachedWorkspace == null || cachedPinHash == null) {
+            new AlertDialog.Builder(this)
+                    .setTitle("No Cache Available")
+                    .setMessage(R.string.error_offline_no_cache)
+                    .setPositiveButton("Go Online", (d, w) -> {
+                        isOfflineMode = false;
+                        showOnlineModeUI();
+                    })
+                    .show();
+            return;
+        }
+
+        String inputPin = binding.etPin.getText().toString().trim();
+        String inputHash = String.valueOf(inputPin.hashCode());
+
+        if (inputHash.equals(cachedPinHash)) {
+            app.setOfflineMode(true);
+            Toast.makeText(this, "Offline login successful", Toast.LENGTH_SHORT).show();
+            
+            AuditLogger.log(this, AuditLogger.ACTION_LOGIN, 
+                    "Staff offline login: " + cachedWorkspace);
+            
+            startActivity(new Intent(this, DashboardActivity.class));
+            finish();
+        } else {
+            Toast.makeText(this, "Invalid cached PIN", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void cacheStaffCredentials(String workspaceId, String pin, String name) {
+        app.getPreferences().edit()
+                .putString("cached_user_type", "staff")
+                .putString("staff_workspace", workspaceId)
+                .putString("staff_pin_hash", String.valueOf(pin.hashCode()))
+                .putString("staff_name", name)
+                .putLong("cache_timestamp", System.currentTimeMillis())
+                .apply();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        binding = null;
+    }
+}
