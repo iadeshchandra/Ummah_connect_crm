@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    
+    <!-- Background Circle -->
+    <path
+        android:fillColor="#1E5631"
+        android:pathData="M60,60m-55,0a55,55 0,1 1,110 0a55,55 0,1 1,-110 0"/>
+    
+    <!-- Inner Circle (Gold) -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M60,60m-45,0a45,45 0,1 1,90 0a45,45 0,1 1,-90 0"/>
+    
+    <!-- Crescent Moon -->
+    <path
+        android:fillColor="#1E5631"
+        android:pathData="M60,25c-19.33,0 -35,15.67 -35,35s15.67,35 35,35c5.5,0 10.7,-1.27 15.34,-3.53C68.14,88.14 62.76,89 57,89c-16.02,0 -29,-12.98 -29,-29s12.98,-29 29,-29c5.76,0 11.14,1.69 15.66,4.59C72.48,31.98 66.5,25 60,25z"/>
+    
+    <!-- Star -->
+    <path
+        android:fillColor="#1E5631"
+        android:pathData="M75,45l3.09,6.26l6.91,1l-5,4.87l1.18,6.88l-6.18,-3.25l-6.18,3.25l1.18,-6.88l-5,-4.87l6.91,-1z"/>
+
+</vector>
