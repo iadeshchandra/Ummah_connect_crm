@@ -1,0 +1,12 @@
+# Force LF line endings for all text files
+* text=auto eol=lf
+
+# Gradle files
+*.gradle text eol=lf
+gradlew text eol=lf
+
+# XML files
+*.xml text eol=lf
+
+# Properties files
+*.properties text eol=lf
