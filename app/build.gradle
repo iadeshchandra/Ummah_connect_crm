@@ -59,6 +59,9 @@ dependencies {
     // iText7 for PDF Generation (100% Offline)
     implementation 'com.itextpdf:itext7-core:8.0.2'
     
+    // Hijri Calendar
+    implementation 'com.github.msarhan:ummalqura-calendar:2.0.2'
+    
     // Security & Crypto
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
     
