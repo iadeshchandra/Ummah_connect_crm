@@ -163,4 +163,21 @@ public class Guest {
                 return android.R.color.holo_blue_dark;
         }
     }
+
+    /**
+     * Convert to Map for Firebase update
+     */
+    public java.util.Map<String, Object> toMap() {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("name", name);
+        map.put("phone", phone);
+        map.put("email", email);
+        map.put("type", type);
+        map.put("notes", notes);
+        map.put("firstVisitDate", firstVisitDate);
+        map.put("lastVisitDate", lastVisitDate);
+        map.put("visitCount", visitCount);
+        map.put("updatedAt", System.currentTimeMillis());
+        return map;
+    }
 }
