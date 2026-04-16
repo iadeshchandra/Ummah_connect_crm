@@ -139,4 +139,20 @@ public class Member {
                 return android.R.color.holo_green_dark;
         }
     }
+
+    /**
+     * Convert to Map for Firebase update
+     */
+    public java.util.Map<String, Object> toMap() {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("name", name);
+        map.put("phone", phone);
+        map.put("email", email);
+        map.put("address", address);
+        map.put("status", status);
+        map.put("notes", notes);
+        map.put("joinDate", joinDate);
+        map.put("updatedAt", System.currentTimeMillis());
+        return map;
+    }
 }
