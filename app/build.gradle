@@ -30,12 +30,20 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
+
+    // ENABLE VIEW BINDING HERE
+    buildFeatures {
+        viewBinding true
+    }
 }
 
 dependencies {
 
     implementation platform('com.google.firebase:firebase-bom:34.12.0')
     implementation 'com.google.firebase:firebase-analytics'
+    
+    // ADD MISSING FIREBASE REALTIME DATABASE DEPENDENCY
+    implementation 'com.google.firebase:firebase-database'
 
     implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.appcompat:appcompat:1.7.0'
