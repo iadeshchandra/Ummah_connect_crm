@@ -18,8 +18,7 @@ import java.util.Map;
 
 /**
  * PinGenerationActivity - Generate/Reset Staff PIN
- * 
- * Features:
+ * * Features:
  * - Generate new 6-digit secure PIN
  * - Update existing staff record
  * - Create new staff if workspace doesn't exist
@@ -35,10 +34,10 @@ public class PinGenerationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityPinGenerationBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        
+
         database = FirebaseDatabase.getInstance();
         workspaceId = getIntent().getStringExtra("workspace_id");
-        
+
         setupUI();
     }
 
@@ -47,7 +46,7 @@ public class PinGenerationActivity extends AppCompatActivity {
             binding.etWorkspaceId.setText(workspaceId);
             binding.etWorkspaceId.setEnabled(false);
         }
-        
+
         binding.btnGeneratePin.setOnClickListener(v -> generateAndSavePin());
         binding.btnBack.setOnClickListener(v -> finish());
     }
@@ -68,7 +67,7 @@ public class PinGenerationActivity extends AppCompatActivity {
         // Verify admin code (simple validation - enhance in production)
         if (!"UMMAH2024".equals(adminCode)) {
             Toast.makeText(this, "Invalid admin authorization code", Toast.LENGTH_SHORT).show();
-            return();
+            return;
         }
 
         binding.progressBar.setVisibility(View.VISIBLE);
@@ -76,7 +75,7 @@ public class PinGenerationActivity extends AppCompatActivity {
 
         // Generate secure 6-digit PIN
         String newPin = generateSecurePin();
-        
+
         // Prepare staff data
         Map<String, Object> staffData = new HashMap<>();
         staffData.put("name", staffName);
@@ -86,25 +85,25 @@ public class PinGenerationActivity extends AppCompatActivity {
         staffData.put("pin_generated_at", System.currentTimeMillis());
 
         DatabaseReference staffRef = database.getReference("staff").child(workspace);
-        
+
         staffRef.updateChildren(staffData)
                 .addOnSuccessListener(aVoid -> {
                     binding.progressBar.setVisibility(View.GONE);
                     binding.btnGeneratePin.setEnabled(true);
-                    
+
                     // Display the new PIN
                     binding.tvGeneratedPin.setText("New PIN: " + newPin);
                     binding.tvGeneratedPin.setVisibility(View.VISIBLE);
-                    
+
                     // Save PIN history for audit
                     DatabaseReference pinHistory = database.getReference("pin_history")
                             .child(workspace).push();
                     pinHistory.child("pin").setValue(newPin);
                     pinHistory.child("timestamp").setValue(System.currentTimeMillis());
-                    
+
                     AuditLogger.log(this, "PIN_GENERATED", 
                             "New PIN generated for workspace: " + workspace);
-                    
+
                     Toast.makeText(this, "PIN generated successfully", Toast.LENGTH_LONG).show();
                 })
                 .addOnFailureListener(e -> {
