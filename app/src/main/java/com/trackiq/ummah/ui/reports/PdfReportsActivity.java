@@ -48,8 +48,7 @@ import java.util.Locale;
 
 /**
  * PdfReportsActivity - Generate offline PDF reports with iText7
- * 
- * Features:
+ * * Features:
  * - 100% offline PDF generation
  * - Islamic branding (Green/Gold/Blue)
  * - Bismillah header
@@ -125,7 +124,8 @@ public class PdfReportsActivity extends AppCompatActivity {
                     File file = new File(Environment.getExternalStoragePublicDirectory(
                             Environment.DIRECTORY_DOWNLOADS), fileName);
 
-                    PdfWriter writer = new PdfWriter(file, new WriterProperties().setFullCompressionMode(true));
+                    // CORRECTED: Pass absolute path string instead of File object
+                    PdfWriter writer = new PdfWriter(file.getAbsolutePath(), new WriterProperties().setFullCompressionMode(true));
                     PdfDocument pdfDoc = new PdfDocument(writer);
                     Document document = new Document(pdfDoc);
 
@@ -216,7 +216,8 @@ public class PdfReportsActivity extends AppCompatActivity {
                     File file = new File(Environment.getExternalStoragePublicDirectory(
                             Environment.DIRECTORY_DOWNLOADS), fileName);
 
-                    PdfWriter writer = new PdfWriter(file);
+                    // CORRECTED: Pass absolute path string instead of File object
+                    PdfWriter writer = new PdfWriter(file.getAbsolutePath());
                     PdfDocument pdfDoc = new PdfDocument(writer);
                     Document document = new Document(pdfDoc);
 
@@ -254,7 +255,7 @@ public class PdfReportsActivity extends AppCompatActivity {
                         table.addCell(createCell(t.getDate()));
                         table.addCell(createCell(t.getTypeDisplay()));
                         table.addCell(createCell(t.getDescription()));
-                        
+
                         Cell amountCell = createCell(currency.format(t.getAmount()));
                         if (Transaction.CATEGORY_INCOME.equals(t.getCategory())) {
                             amountCell.setFontColor(ISLAMIC_GREEN);
@@ -262,7 +263,7 @@ public class PdfReportsActivity extends AppCompatActivity {
                             amountCell.setFontColor(ColorConstants.RED);
                         }
                         table.addCell(amountCell);
-                        
+
                         table.addCell(createCell(t.getCategory()));
                     }
 
@@ -324,7 +325,8 @@ public class PdfReportsActivity extends AppCompatActivity {
                     File file = new File(Environment.getExternalStoragePublicDirectory(
                             Environment.DIRECTORY_DOWNLOADS), fileName);
 
-                    PdfWriter writer = new PdfWriter(file);
+                    // CORRECTED: Pass absolute path string instead of File object
+                    PdfWriter writer = new PdfWriter(file.getAbsolutePath());
                     PdfDocument pdfDoc = new PdfDocument(writer);
                     Document document = new Document(pdfDoc);
 
