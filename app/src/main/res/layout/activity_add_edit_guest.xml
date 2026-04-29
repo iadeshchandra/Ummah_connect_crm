@@ -12,12 +12,19 @@
         android:background="?attr/colorPrimary"
         android:layout_marginBottom="16dp" />
 
+    <TextView
+        android:id="@+id/tvGuestId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="GST-XXXX"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp">
-
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etName"
             android:layout_width="match_parent"
@@ -30,7 +37,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp">
-
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etPhone"
             android:layout_width="match_parent"
@@ -39,12 +45,24 @@
             android:hint="Phone Number" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textEmailAddress"
+            android:hint="Email Address" />
+    </com.google.android.material.textfield.TextInputLayout>
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Guest Type"
         android:textStyle="bold" />
-
     <Spinner
         android:id="@+id/spinnerType"
         android:layout_width="match_parent"
@@ -54,8 +72,7 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp">
-
+        android:layout_marginBottom="16dp">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etNotes"
             android:layout_width="match_parent"
@@ -64,6 +81,22 @@
             android:gravity="top|start"
             android:hint="Notes" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:id="@+id/tvVisitInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Visits: 0"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnRecordVisit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Record Visit"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp" />
 
     <Button
         android:id="@+id/btnSave"
@@ -77,5 +110,4 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:visibility="gone" />
-
 </LinearLayout>
