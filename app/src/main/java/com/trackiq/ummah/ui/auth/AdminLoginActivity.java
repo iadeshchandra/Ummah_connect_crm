@@ -11,7 +11,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
-import com.google.firebase.auth.FirebaseNetworkException;
+// CORRECTED IMPORT:
+import com.google.firebase.FirebaseNetworkException;
 import com.google.firebase.auth.FirebaseUser;
 import com.trackiq.ummah.R;
 import com.trackiq.ummah.UmmahConnectApp;
@@ -21,8 +22,7 @@ import com.trackiq.ummah.utils.AuditLogger;
 
 /**
  * AdminLoginActivity - Email/Password Authentication
- * 
- * Features:
+ * * Features:
  * - Standard Firebase Email/Pass login
  * - Offline cache fallback for network errors
  * - Automatic credential caching for offline mode
@@ -39,29 +39,29 @@ public class AdminLoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityAdminLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        
+
         firebaseAuth = FirebaseAuth.getInstance();
         app = UmmahConnectApp.getInstance();
-        
+
         // Check if coming from offline cache
         isOfflineMode = getIntent().getBooleanExtra("offline_mode", false);
-        
+
         setupUI();
     }
 
     private void setupUI() {
         // Toggle between online and offline mode
         binding.btnToggleMode.setOnClickListener(v -> toggleOfflineMode());
-        
+
         // Login button
         binding.btnLogin.setOnClickListener(v -> attemptLogin());
-        
+
         // Switch to staff login
         binding.tvStaffLogin.setOnClickListener(v -> {
             startActivity(new Intent(this, StaffLoginActivity.class));
             finish();
         });
-        
+
         if (isOfflineMode) {
             showOfflineModeUI();
         }
@@ -85,7 +85,7 @@ public class AdminLoginActivity extends AppCompatActivity {
         binding.etEmail.setEnabled(false);
         binding.etPassword.setEnabled(false);
         binding.btnLogin.setText(R.string.cache_login);
-        
+
         // Check if we have cached credentials
         String cachedEmail = app.getPreferences().getString("admin_email", null);
         if (cachedEmail != null) {
@@ -139,11 +139,11 @@ public class AdminLoginActivity extends AppCompatActivity {
                         if (user != null && user.isEmailVerified()) {
                             // Cache credentials for offline use
                             cacheAdminCredentials(email, password);
-                            
+
                             // Log audit
                             AuditLogger.log(this, AuditLogger.ACTION_LOGIN, 
                                     "Admin logged in: " + email);
-                            
+
                             // Go to dashboard
                             startActivity(new Intent(this, DashboardActivity.class));
                             finish();
@@ -165,7 +165,7 @@ public class AdminLoginActivity extends AppCompatActivity {
     private void attemptOfflineLogin() {
         String cachedEmail = app.getPreferences().getString("admin_email", null);
         String cachedPasswordHash = app.getPreferences().getString("admin_pass_hash", null);
-        
+
         if (cachedEmail == null || cachedPasswordHash == null) {
             new AlertDialog.Builder(this)
                     .setTitle("No Cache Available")
@@ -181,15 +181,15 @@ public class AdminLoginActivity extends AppCompatActivity {
         // Verify password hash (simplified - use proper encryption in production)
         String inputPassword = binding.etPassword.getText().toString().trim();
         String inputHash = String.valueOf(inputPassword.hashCode());
-        
+
         if (inputHash.equals(cachedPasswordHash)) {
             // Offline login successful
             app.setOfflineMode(true);
             Toast.makeText(this, "Offline login successful", Toast.LENGTH_SHORT).show();
-            
+
             AuditLogger.log(this, AuditLogger.ACTION_LOGIN, 
                     "Admin offline login: " + cachedEmail);
-            
+
             startActivity(new Intent(this, DashboardActivity.class));
             finish();
         } else {
@@ -214,7 +214,7 @@ public class AdminLoginActivity extends AppCompatActivity {
      */
     private void handleLoginError(Exception exception) {
         String message;
-        
+
         if (exception instanceof FirebaseNetworkException) {
             message = "Network error. Switch to offline mode?";
             new AlertDialog.Builder(this)
@@ -234,7 +234,7 @@ public class AdminLoginActivity extends AppCompatActivity {
         } else {
             message = "Login failed: " + exception.getMessage();
         }
-        
+
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
