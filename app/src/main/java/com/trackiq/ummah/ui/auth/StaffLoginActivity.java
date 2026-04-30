@@ -1,6 +1,7 @@
 package com.trackiq.ummah.ui.auth;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
@@ -14,8 +15,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.trackiq.ummah.UmmahConnectApp;
-import com.trackiq.ummah.databinding.ActivityStaffLoginBinding; // Adjust if your binding name differs
+import com.trackiq.ummah.databinding.ActivityStaffLoginBinding;
 import com.trackiq.ummah.ui.main.DashboardActivity;
 
 public class StaffLoginActivity extends AppCompatActivity {
@@ -80,15 +80,45 @@ public class StaffLoginActivity extends AppCompatActivity {
         firebaseAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Success! Proceed to dashboard
-                        Toast.makeText(StaffLoginActivity.this, "Welcome, Admin", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(StaffLoginActivity.this, DashboardActivity.class));
-                        finish();
+                        // Success! Now fetch their Workspace ID from the database
+                        String uid = firebaseAuth.getCurrentUser().getUid();
+                        database.child("users").child(uid).child("workspaceId")
+                                .addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                        String workspaceId = snapshot.getValue(String.class);
+                                        
+                                        if (workspaceId != null) {
+                                            // Save the Workspace ID to local preferences
+                                            SharedPreferences.Editor editor = getSharedPreferences("UmmahPrefs", MODE_PRIVATE).edit();
+                                            editor.putString("current_workspace_id", workspaceId);
+                                            editor.putString("cached_user_type", "admin");
+                                            editor.apply();
+
+                                            Toast.makeText(StaffLoginActivity.this, "Welcome, Admin", Toast.LENGTH_SHORT).show();
+                                            startActivity(new Intent(StaffLoginActivity.this, DashboardActivity.class));
+                                            finish();
+                                        } else {
+                                            // Safety catch if they have no workspace
+                                            firebaseAuth.signOut();
+                                            binding.progressBar.setVisibility(View.GONE);
+                                            binding.btnSecureLogin.setEnabled(true);
+                                            Toast.makeText(StaffLoginActivity.this, "Error: No workspace assigned to this account.", Toast.LENGTH_LONG).show();
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError error) {
+                                        binding.progressBar.setVisibility(View.GONE);
+                                        binding.btnSecureLogin.setEnabled(true);
+                                        Toast.makeText(StaffLoginActivity.this, "Database error", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
                     } else {
                         // Failed Auth
                         binding.progressBar.setVisibility(View.GONE);
                         binding.btnSecureLogin.setEnabled(true);
-                        Toast.makeText(StaffLoginActivity.this, "Admin Login Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        Toast.makeText(StaffLoginActivity.this, "Login Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                     }
                 });
     }
@@ -108,11 +138,11 @@ public class StaffLoginActivity extends AppCompatActivity {
                             Boolean isActive = snapshot.child("active").getValue(Boolean.class);
 
                             if (Boolean.TRUE.equals(isActive) && pin.equals(dbPin)) {
-                                // Cache the workspace ID so the dashboard knows what to load
-                                UmmahConnectApp.getInstance().getPreferences().edit()
-                                        .putString("current_workspace_id", workspaceId)
-                                        .putString("cached_user_type", "staff")
-                                        .apply();
+                                // Cache the workspace ID using standard preferences
+                                SharedPreferences.Editor editor = getSharedPreferences("UmmahPrefs", MODE_PRIVATE).edit();
+                                editor.putString("current_workspace_id", workspaceId);
+                                editor.putString("cached_user_type", "staff");
+                                editor.apply();
 
                                 Toast.makeText(StaffLoginActivity.this, "Staff Login Successful", Toast.LENGTH_SHORT).show();
                                 startActivity(new Intent(StaffLoginActivity.this, DashboardActivity.class));
