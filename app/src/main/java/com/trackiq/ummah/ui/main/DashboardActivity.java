@@ -40,7 +40,6 @@ public class DashboardActivity extends AppCompatActivity {
         currentWorkspaceId = prefs.getString("current_workspace_id", null);
 
         if (currentWorkspaceId == null) {
-            // Safety catch: If no workspace is cached, force them back to login
             Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_SHORT).show();
             logoutUser();
             return;
@@ -51,8 +50,53 @@ public class DashboardActivity extends AppCompatActivity {
         // 2. Determine User Type & Setup UI (Role-Based Access Control)
         determineUserRoleAndSetupUI();
 
-        // Logout Button listener
+        // 3. Setup Dashboard Button Navigation
+        setupClickListeners();
+    }
+
+    private void setupClickListeners() {
+        // Logout
         binding.btnLogout.setOnClickListener(v -> logoutUser());
+
+        // 1. Members Card
+        binding.cardMembers.setOnClickListener(v -> {
+            startActivity(new Intent(DashboardActivity.this, com.trackiq.ummah.ui.members.MemberListActivity.class));
+        });
+
+        // 2. Ledger / Finance Card
+        binding.cardLedger.setOnClickListener(v -> {
+            startActivity(new Intent(DashboardActivity.this, com.trackiq.ummah.ui.ledger.LedgerActivity.class));
+        });
+
+        // 3. Calendar / Events Card
+        binding.cardCalendar.setOnClickListener(v -> {
+            startActivity(new Intent(DashboardActivity.this, com.trackiq.ummah.ui.calendar.HijriCalendarActivity.class));
+        });
+
+        // 4. Bulletins / Announcements Card
+        binding.cardAnnouncements.setOnClickListener(v -> {
+            startActivity(new Intent(DashboardActivity.this, com.trackiq.ummah.ui.comms.ShuraPollsActivity.class));
+        });
+
+        // 5. Add Expense (Floating Action Button)
+        binding.btnAddExpense.setOnClickListener(v -> {
+            startActivity(new Intent(DashboardActivity.this, com.trackiq.ummah.ui.ledger.AddTransactionActivity.class));
+        });
+
+        // 6. Manage Staff / Roles
+        binding.btnManageStaff.setOnClickListener(v -> {
+            Toast.makeText(this, "Staff Management module coming soon", Toast.LENGTH_SHORT).show();
+        });
+
+        // 7. Send Broadcast
+        binding.btnSendBroadcast.setOnClickListener(v -> {
+            Toast.makeText(this, "Broadcast module coming soon", Toast.LENGTH_SHORT).show();
+        });
+
+        // 8. Workspace Settings
+        binding.btnWorkspaceSettings.setOnClickListener(v -> {
+            Toast.makeText(this, "Workspace Settings coming soon", Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void determineUserRoleAndSetupUI() {
@@ -76,22 +120,20 @@ public class DashboardActivity extends AppCompatActivity {
                     });
         } else {
             // It's a Staff member who logged in with a Workspace ID and PIN
-            // For now, we will treat them as a "MANAGER" level for daily operations
             configureUIForRole("MANAGER");
         }
     }
 
     private void configureUIForRole(String role) {
         // First, hide everything sensitive by default (Zero Trust Principle)
-        binding.btnAddExpense.setVisibility(View.GONE); // The Floating Action Button
-        binding.btnSendBroadcast.setVisibility(View.GONE); // The Broadcast Card
-        binding.btnManageStaff.setVisibility(View.GONE); // The Staff Management Card
-        binding.btnWorkspaceSettings.setVisibility(View.GONE); // The Settings Card
+        binding.btnAddExpense.setVisibility(View.GONE); 
+        binding.btnSendBroadcast.setVisibility(View.GONE); 
+        binding.btnManageStaff.setVisibility(View.GONE); 
+        binding.btnWorkspaceSettings.setVisibility(View.GONE); 
 
         // Then, reveal buttons based on their exact rank
         switch (role) {
             case "SUPER_ADMIN":
-                // Highest level: Sees everything
                 binding.btnManageStaff.setVisibility(View.VISIBLE);
                 binding.btnWorkspaceSettings.setVisibility(View.VISIBLE);
                 binding.btnAddExpense.setVisibility(View.VISIBLE);
@@ -100,7 +142,6 @@ public class DashboardActivity extends AppCompatActivity {
                 break;
 
             case "MANAGER":
-                // Middle level: Can do daily tasks but cannot change app settings
                 binding.btnAddExpense.setVisibility(View.VISIBLE);
                 binding.btnSendBroadcast.setVisibility(View.VISIBLE);
                 binding.tvUserRole.setText("Role: Manager / Staff");
@@ -108,22 +149,18 @@ public class DashboardActivity extends AppCompatActivity {
 
             case "MEMBER":
             default:
-                // Lowest level: Read-only (Buttons remain GONE)
                 binding.tvUserRole.setText("Role: Community Member");
                 break;
         }
     }
 
     private void logoutUser() {
-        // 1. Sign out of Firebase
         if (firebaseAuth.getCurrentUser() != null) {
             firebaseAuth.signOut();
         }
         
-        // 2. Clear the cached workspace ID so the next user doesn't load the wrong data
         getSharedPreferences("UmmahPrefs", MODE_PRIVATE).edit().clear().apply();
         
-        // 3. Return to Universal Login screen
         Intent intent = new Intent(this, StaffLoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
