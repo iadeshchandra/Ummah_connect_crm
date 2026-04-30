@@ -1,5 +1,6 @@
 package com.trackiq.ummah.ui.members;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -13,7 +14,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.trackiq.ummah.R;
-import com.trackiq.ummah.UmmahConnectApp;
 import com.trackiq.ummah.databinding.ActivityAddEditMemberBinding;
 import com.trackiq.ummah.model.Member;
 import com.trackiq.ummah.utils.AuditLogger;
@@ -25,9 +25,9 @@ import java.util.UUID;
 
 /**
  * AddEditMemberActivity - Create or edit member (MBR-XXXX)
- * 
- * Auto-generates MBR- prefix IDs
+ * * Auto-generates MBR- prefix IDs
  * Validates required fields
+ * Strictly enforces Workspace Silo for Multi-Tenant SaaS
  * Works offline via Firebase persistence
  */
 public class AddEditMemberActivity extends AppCompatActivity {
@@ -36,6 +36,7 @@ public class AddEditMemberActivity extends AppCompatActivity {
     private DatabaseReference membersRef;
     private String existingMemberId = null;
     private boolean isEditMode = false;
+    private String currentWorkspaceId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,11 +44,22 @@ public class AddEditMemberActivity extends AppCompatActivity {
         binding = ActivityAddEditMemberBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        membersRef = FirebaseDatabase.getInstance().getReference("members");
+        // 1. Fetch Workspace ID to secure the data silo
+        SharedPreferences prefs = getSharedPreferences("UmmahPrefs", MODE_PRIVATE);
+        currentWorkspaceId = prefs.getString("current_workspace_id", null);
+
+        if (currentWorkspaceId == null) {
+            Toast.makeText(this, "Session error. Workspace not found.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // 2. Initialize Firebase reference locked to THIS Workspace ONLY
+        membersRef = FirebaseDatabase.getInstance().getReference("members").child(currentWorkspaceId);
 
         setupToolbar();
         setupStatusDropdown();
-        
+
         // Check if editing existing member
         existingMemberId = getIntent().getStringExtra("member_id");
         if (existingMemberId != null) {
@@ -60,8 +72,10 @@ public class AddEditMemberActivity extends AppCompatActivity {
 
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
-        getSupportActionBar().setTitle(isEditMode ? "Edit Member" : "Add Member");
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(isEditMode ? "Edit Member" : "Add Member");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         binding.toolbar.setNavigationOnClickListener(v -> finish());
     }
 
@@ -86,20 +100,20 @@ public class AddEditMemberActivity extends AppCompatActivity {
      */
     private void loadExistingMember() {
         binding.progressBar.setVisibility(View.VISIBLE);
-        
+
         membersRef.child(existingMemberId).get().addOnCompleteListener(task -> {
             binding.progressBar.setVisibility(View.GONE);
-            
+
             if (task.isSuccessful() && task.getResult() != null) {
                 Member member = task.getResult().getValue(Member.class);
                 if (member != null) {
-                    binding.tvMemberId.setText(member.getDisplayId());
+                    binding.tvMemberId.setText(member.getDisplayId() != null ? member.getDisplayId() : existingMemberId);
                     binding.etName.setText(member.getName());
                     binding.etPhone.setText(member.getPhone());
                     binding.etEmail.setText(member.getEmail());
                     binding.etAddress.setText(member.getAddress());
                     binding.etNotes.setText(member.getNotes());
-                    
+
                     // Set status spinner
                     String status = member.getStatus();
                     if (status != null) {
@@ -135,7 +149,7 @@ public class AddEditMemberActivity extends AppCompatActivity {
     }
 
     /**
-     * Validate and save member to Firebase
+     * Validate and save member strictly to the Workspace Silo
      */
     private void saveMember() {
         String name = binding.etName.getText().toString().trim();
@@ -172,16 +186,17 @@ public class AddEditMemberActivity extends AppCompatActivity {
         member.setUpdatedAt(System.currentTimeMillis());
 
         String memberId = binding.tvMemberId.getText().toString().replace("MBR-", "");
+        member.setDisplayId("MBR-" + memberId); // Ensure the display ID is tracked
 
         if (isEditMode) {
-            // Update existing
+            // Update existing inside the workspace silo
             membersRef.child(existingMemberId).updateChildren(member.toMap())
                     .addOnCompleteListener(task -> {
                         binding.progressBar.setVisibility(View.GONE);
                         if (task.isSuccessful()) {
                             AuditLogger.log(this, AuditLogger.ACTION_MEMBER_EDIT,
                                     "Updated member: " + memberId);
-                            Toast.makeText(this, "Member updated", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Member updated successfully", Toast.LENGTH_SHORT).show();
                             finish();
                         } else {
                             Toast.makeText(this, "Error: " + task.getException().getMessage(),
@@ -189,18 +204,17 @@ public class AddEditMemberActivity extends AppCompatActivity {
                         }
                     });
         } else {
-            // Create new
+            // Create new inside the workspace silo
             member.setCreatedAt(System.currentTimeMillis());
-            member.setJoinDate(new SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                    .format(new Date()));
-            
+            member.setJoinDate(new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()));
+
             membersRef.child(memberId).setValue(member)
                     .addOnCompleteListener(task -> {
                         binding.progressBar.setVisibility(View.GONE);
                         if (task.isSuccessful()) {
                             AuditLogger.log(this, AuditLogger.ACTION_MEMBER_ADD,
                                     "Created member: " + memberId);
-                            Toast.makeText(this, "Member created", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Member added successfully", Toast.LENGTH_SHORT).show();
                             finish();
                         } else {
                             Toast.makeText(this, "Error: " + task.getException().getMessage(),
