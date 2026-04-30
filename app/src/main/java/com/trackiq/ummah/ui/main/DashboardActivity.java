@@ -2,236 +2,130 @@ package com.trackiq.ummah.ui.main;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
 
-import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
-import com.trackiq.ummah.R;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.trackiq.ummah.UmmahConnectApp;
-import com.trackiq.ummah.ui.audit.AuditLogActivity;
-import com.trackiq.ummah.ui.auth.AdminLoginActivity;
+import com.trackiq.ummah.databinding.ActivityDashboardBinding;
 import com.trackiq.ummah.ui.auth.StaffLoginActivity;
-import com.trackiq.ummah.ui.calendar.HijriCalendarActivity;
-import com.trackiq.ummah.ui.comms.AnnouncementsActivity;
-import com.trackiq.ummah.ui.guests.GuestListActivity;
-import com.trackiq.ummah.ui.ledger.LedgerActivity;
-import com.trackiq.ummah.ui.members.MemberListActivity;
-import com.trackiq.ummah.ui.reports.PdfReportsActivity;
-import com.trackiq.ummah.utils.AuditLogger;
 
-/**
- * DashboardActivity - Main navigation hub
- * 
- * Features:
- * - Grid menu for all modules
- * - Navigation drawer with user info
- * - Offline mode indicator
- * - Quick stats display
- */
-public class DashboardActivity extends AppCompatActivity implements 
-        NavigationView.OnNavigationItemSelectedListener {
+public class DashboardActivity extends AppCompatActivity {
 
-    private DrawerLayout drawerLayout;
-    private NavigationView navigationView;
-    private Toolbar toolbar;
-    private TextView tvOfflineIndicator;
-    private UmmahConnectApp app;
+    private ActivityDashboardBinding binding;
     private FirebaseAuth firebaseAuth;
+    private DatabaseReference database;
+    private String currentWorkspaceId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_dashboard);
-        
-        app = UmmahConnectApp.getInstance();
+        binding = ActivityDashboardBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
         firebaseAuth = FirebaseAuth.getInstance();
-        
-        initViews();
-        setupToolbar();
-        setupNavigation();
-        setupDashboardCards();
-        updateUserInfo();
-        checkOfflineMode();
+        database = FirebaseDatabase.getInstance().getReference();
+
+        // 1. Get the Workspace ID that was saved during Login/Registration
+        currentWorkspaceId = UmmahConnectApp.getInstance()
+                .getPreferences().getString("current_workspace_id", null);
+
+        if (currentWorkspaceId == null) {
+            // Safety catch: If no workspace is cached, force them back to login
+            logoutUser();
+            return;
+        }
+
+        binding.tvWorkspaceName.setText("Workspace: " + currentWorkspaceId);
+
+        // 2. Determine User Type & Setup UI
+        determineUserRoleAndSetupUI();
+
+        // Logout Button listener
+        binding.btnLogout.setOnClickListener(v -> logoutUser());
     }
 
-    private void initViews() {
-        drawerLayout = findViewById(R.id.drawer_layout);
-        navigationView = findViewById(R.id.nav_view);
-        toolbar = findViewById(R.id.toolbar);
-        tvOfflineIndicator = findViewById(R.id.tvOfflineIndicator);
-    }
+    private void determineUserRoleAndSetupUI() {
+        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
 
-    private void setupToolbar() {
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("Ummah Connect");
-        
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawerLayout, toolbar,
-                R.string.navigation_drawer_open,
-                R.string.navigation_drawer_close);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
-    }
+        if (currentUser != null) {
+            // It's an Authenticated User (Super Admin, Manager, or App Member)
+            database.child("users").child(currentUser.getUid()).child("role")
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            String role = snapshot.getValue(String.class);
+                            if (role == null) role = "MEMBER"; // Default fallback
+                            configureUIForRole(role);
+                        }
 
-    private void setupNavigation() {
-        navigationView.setNavigationItemSelectedListener(this);
-        
-        // Update header with user info
-        View headerView = navigationView.getHeaderView(0);
-        TextView tvUserName = headerView.findViewById(R.id.tvNavUserName);
-        TextView tvUserType = headerView.findViewById(R.id.tvNavUserType);
-        
-        String userType = app.getPreferences().getString("cached_user_type", "staff");
-        if ("admin".equals(userType)) {
-            tvUserName.setText(app.getPreferences().getString("admin_email", "Admin"));
-            tvUserType.setText("Administrator");
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            Toast.makeText(DashboardActivity.this, "Failed to load role", Toast.LENGTH_SHORT).show();
+                        }
+                    });
         } else {
-            tvUserName.setText(app.getPreferences().getString("staff_name", "Staff"));
-            tvUserType.setText("Staff - " + app.getPreferences().getString("staff_workspace", ""));
+            // It's a Staff member who logged in with a Workspace ID and PIN
+            // For now, we will treat them as a "MANAGER" level for daily operations
+            configureUIForRole("MANAGER");
         }
     }
 
-    private void setupDashboardCards() {
-        // Members Card
-        MaterialCardView cardMembers = findViewById(R.id.cardMembers);
-        cardMembers.setOnClickListener(v -> {
-            startActivity(new Intent(this, MemberListActivity.class));
-        });
+    private void configureUIForRole(String role) {
+        // First, hide everything sensitive by default (Zero Trust)
+        binding.btnAddExpense.setVisibility(View.GONE);
+        binding.btnSendBroadcast.setVisibility(View.GONE);
+        binding.btnManageStaff.setVisibility(View.GONE);
+        binding.btnWorkspaceSettings.setVisibility(View.GONE);
 
-        // Guests Card
-        MaterialCardView cardGuests = findViewById(R.id.cardGuests);
-        cardGuests.setOnClickListener(v -> {
-            startActivity(new Intent(this, GuestListActivity.class));
-        });
+        // Then, reveal buttons based on their exact rank
+        switch (role) {
+            case "SUPER_ADMIN":
+                // Highest level: Sees everything
+                binding.btnManageStaff.setVisibility(View.VISIBLE);
+                binding.btnWorkspaceSettings.setVisibility(View.VISIBLE);
+                binding.btnAddExpense.setVisibility(View.VISIBLE);
+                binding.btnSendBroadcast.setVisibility(View.VISIBLE);
+                binding.tvUserRole.setText("Role: Super Admin");
+                break;
 
-        // Ledger Card
-        MaterialCardView cardLedger = findViewById(R.id.cardLedger);
-        cardLedger.setOnClickListener(v -> {
-            startActivity(new Intent(this, LedgerActivity.class));
-        });
+            case "MANAGER":
+                // Middle level: Can do daily tasks but cannot change app settings
+                binding.btnAddExpense.setVisibility(View.VISIBLE);
+                binding.btnSendBroadcast.setVisibility(View.VISIBLE);
+                binding.tvUserRole.setText("Role: Manager / Staff");
+                break;
 
-        // Reports Card
-        MaterialCardView cardReports = findViewById(R.id.cardReports);
-        cardReports.setOnClickListener(v -> {
-            startActivity(new Intent(this, PdfReportsActivity.class));
-        });
-
-        // Announcements Card
-        MaterialCardView cardAnnouncements = findViewById(R.id.cardAnnouncements);
-        cardAnnouncements.setOnClickListener(v -> {
-            startActivity(new Intent(this, AnnouncementsActivity.class));
-        });
-
-        // Calendar Card
-        MaterialCardView cardCalendar = findViewById(R.id.cardCalendar);
-        cardCalendar.setOnClickListener(v -> {
-            startActivity(new Intent(this, HijriCalendarActivity.class));
-        });
-    }
-
-    private void updateUserInfo() {
-        // Quick stats could be loaded here
-    }
-
-    private void checkOfflineMode() {
-        if (app.isOfflineMode()) {
-            tvOfflineIndicator.setVisibility(View.VISIBLE);
-        } else {
-            tvOfflineIndicator.setVisibility(View.GONE);
+            case "MEMBER":
+            default:
+                // Lowest level: Read-only (Buttons remain GONE)
+                binding.tvUserRole.setText("Role: Community Member");
+                break;
         }
     }
 
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.nav_members) {
-            startActivity(new Intent(this, MemberListActivity.class));
-        } else if (id == R.id.nav_guests) {
-            startActivity(new Intent(this, GuestListActivity.class));
-        } else if (id == R.id.nav_ledger) {
-            startActivity(new Intent(this, LedgerActivity.class));
-        } else if (id == R.id.nav_reports) {
-            startActivity(new Intent(this, PdfReportsActivity.class));
-        } else if (id == R.id.nav_announcements) {
-            startActivity(new Intent(this, AnnouncementsActivity.class));
-        } else if (id == R.id.nav_calendar) {
-            startActivity(new Intent(this, HijriCalendarActivity.class));
-        } else if (id == R.id.nav_audit) {
-            // Only admin can view audit logs
-            if ("admin".equals(app.getPreferences().getString("cached_user_type", ""))) {
-                startActivity(new Intent(this, AuditLogActivity.class));
-            } else {
-                Toast.makeText(this, "Admin access required", Toast.LENGTH_SHORT).show();
-            }
-        } else if (id == R.id.nav_logout) {
-            confirmLogout();
+    private void logoutUser() {
+        // 1. Sign out of Firebase
+        if (firebaseAuth.getCurrentUser() != null) {
+            firebaseAuth.signOut();
         }
-
-        drawerLayout.closeDrawer(GravityCompat.START);
-        return true;
-    }
-
-    private void confirmLogout() {
-        new AlertDialog.Builder(this)
-                .setTitle("Logout")
-                .setMessage("Are you sure you want to logout?")
-                .setPositiveButton("Yes", (dialog, which) -> performLogout())
-                .setNegativeButton("No", null)
-                .show();
-    }
-
-    private void performLogout() {
-        // Log the action
-        AuditLogger.log(this, AuditLogger.ACTION_LOGOUT, "User logged out");
         
-        // Clear Firebase auth
-        firebaseAuth.signOut();
+        // 2. Clear the cached workspace ID
+        UmmahConnectApp.getInstance().getPreferences().edit().clear().apply();
         
-        // Clear cache
-        app.getPreferences().edit()
-                .remove("cached_user_type")
-                .remove("admin_email")
-                .remove("admin_pass_hash")
-                .remove("staff_workspace")
-                .remove("staff_pin_hash")
-                .remove("staff_name")
-                .apply();
-        
-        app.setOfflineMode(false);
-        
-        // Return to login
+        // 3. Return to Universal Login screen
         Intent intent = new Intent(this, StaffLoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        checkOfflineMode();
     }
 }
