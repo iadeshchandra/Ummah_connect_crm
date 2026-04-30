@@ -7,14 +7,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:openDrawer="start">
+    tools:openDrawer="start"
+    android:background="#FDFBF7">
 
-    <!-- Main Content -->
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- AppBar with Toolbar -->
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -24,12 +23,11 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="@color/islamic_green"
+                android:background="#114B3B"
                 app:popupTheme="@style/Theme.UmmahConnect.PopupOverlay" />
 
         </com.google.android.material.appbar.AppBarLayout>
 
-        <!-- Content -->
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -41,264 +39,192 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- Offline Indicator -->
                 <TextView
                     android:id="@+id/tvOfflineIndicator"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    android:background="@color/warning_amber"
+                    android:background="#FFC107"
                     android:gravity="center"
                     android:padding="8dp"
-                    android:text="@string/offline_indicator"
-                    android:textColor="@color/text_primary"
+                    android:text="Offline Mode Active"
+                    android:textColor="#333333"
                     android:textSize="12sp"
                     android:visibility="gone" />
 
-                <!-- Welcome Text -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="As-Salamu Alaykum"
-                    android:textColor="@color/islamic_green"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
+                    android:textColor="#114B3B"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:fontFamily="serif"/>
 
                 <TextView
+                    android:id="@+id/tvWorkspaceName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:layout_marginBottom="24dp"
-                    android:text="Welcome to Ummah Connect CRM"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="14sp" />
+                    android:text="Workspace: Loading..."
+                    android:textColor="#555555"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-                <!-- Dashboard Grid -->
+                <TextView
+                    android:id="@+id/tvUserRole"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:text="Role: Loading..."
+                    android:textColor="#CBA153"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
                 <GridLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:columnCount="2"
-                    android:rowCount="3">
+                    android:rowCount="4">
 
-                    <!-- Members Card -->
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardMembers"
                         android:layout_width="0dp"
                         android:layout_height="120dp"
                         android:layout_columnWeight="1"
                         android:layout_margin="8dp"
-                        app:cardBackgroundColor="@color/islamic_green"
+                        app:cardBackgroundColor="#114B3B"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="4dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="👥"
-                                android:textSize="32sp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/menu_members"
-                                android:textColor="@color/white"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="👥" android:textSize="32sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Members" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" />
                         </LinearLayout>
-
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Guests Card -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardGuests"
-                        android:layout_width="0dp"
-                        android:layout_height="120dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="8dp"
-                        app:cardBackgroundColor="@color/islamic_blue"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="4dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="🕌"
-                                android:textSize="32sp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/menu_guests"
-                                android:textColor="@color/white"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
-                        </LinearLayout>
-
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- Ledger Card -->
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardLedger"
                         android:layout_width="0dp"
                         android:layout_height="120dp"
                         android:layout_columnWeight="1"
                         android:layout_margin="8dp"
-                        app:cardBackgroundColor="@color/islamic_gold"
+                        app:cardBackgroundColor="#CBA153"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="4dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="💰"
-                                android:textSize="32sp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/menu_ledger"
-                                android:textColor="@color/text_primary"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💰" android:textSize="32sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ledger" android:textColor="#333333" android:textSize="16sp" android:textStyle="bold" />
                         </LinearLayout>
-
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Reports Card -->
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardReports"
-                        android:layout_width="0dp"
-                        android:layout_height="120dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="8dp"
-                        app:cardBackgroundColor="@color/success_green"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="4dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="📄"
-                                android:textSize="32sp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/menu_reports"
-                                android:textColor="@color/white"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
-                        </LinearLayout>
-
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <!-- Announcements Card -->
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardAnnouncements"
                         android:layout_width="0dp"
                         android:layout_height="120dp"
                         android:layout_columnWeight="1"
                         android:layout_margin="8dp"
-                        app:cardBackgroundColor="@color/info_blue"
+                        app:cardBackgroundColor="#2196F3"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="4dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="📢"
-                                android:textSize="32sp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/menu_announcements"
-                                android:textColor="@color/white"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📢" android:textSize="32sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bulletins" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" />
                         </LinearLayout>
-
                     </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Calendar Card -->
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/cardCalendar"
                         android:layout_width="0dp"
                         android:layout_height="120dp"
                         android:layout_columnWeight="1"
                         android:layout_margin="8dp"
-                        app:cardBackgroundColor="@color/islamic_green_light"
+                        app:cardBackgroundColor="#4CAF50"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="4dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="📅"
-                                android:textSize="32sp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/menu_calendar"
-                                android:textColor="@color/white"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📅" android:textSize="32sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Events" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" />
                         </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/btnSendBroadcast"
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="8dp"
+                        app:cardBackgroundColor="#E91E63"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📡" android:textSize="32sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Broadcast" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/btnManageStaff"
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_columnWeight="1"
+                        android:layout_margin="8dp"
+                        app:cardBackgroundColor="#607D8B"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🛡️" android:textSize="32sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Staff/Roles" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/btnWorkspaceSettings"
+                        android:layout_width="0dp"
+                        android:layout_height="120dp"
+                        android:layout_columnWeight="2"
+                        android:layout_margin="8dp"
+                        app:cardBackgroundColor="#424242"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="4dp">
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="horizontal">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙️ " android:textSize="24sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Workspace Settings" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" />
+                        </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
 
                 </GridLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogout"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginTop="32dp"
+                    android:layout_marginBottom="24dp"
+                    android:text="SECURE LOGOUT"
+                    android:textColor="#D32F2F"
+                    android:textStyle="bold"
+                    app:backgroundTint="#FFEBEE"
+                    app:strokeColor="#D32F2F"
+                    app:strokeWidth="1dp"
+                    app:cornerRadius="8dp"/>
 
             </LinearLayout>
 
         </androidx.core.widget.NestedScrollView>
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnAddExpense"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="24dp"
+            android:backgroundTint="#CBA153"
+            android:src="@android:drawable/ic_input_add"
+            app:tint="#FFFFFF"
+            android:contentDescription="Add Expense or Donation"/>
+
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
-    <!-- Navigation Drawer -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
