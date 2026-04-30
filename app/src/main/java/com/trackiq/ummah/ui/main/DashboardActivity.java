@@ -1,6 +1,7 @@
 package com.trackiq.ummah.ui.main;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
@@ -15,7 +16,6 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.trackiq.ummah.UmmahConnectApp;
 import com.trackiq.ummah.databinding.ActivityDashboardBinding;
 import com.trackiq.ummah.ui.auth.StaffLoginActivity;
 
@@ -36,18 +36,19 @@ public class DashboardActivity extends AppCompatActivity {
         database = FirebaseDatabase.getInstance().getReference();
 
         // 1. Get the Workspace ID that was saved during Login/Registration
-        currentWorkspaceId = UmmahConnectApp.getInstance()
-                .getPreferences().getString("current_workspace_id", null);
+        SharedPreferences prefs = getSharedPreferences("UmmahPrefs", MODE_PRIVATE);
+        currentWorkspaceId = prefs.getString("current_workspace_id", null);
 
         if (currentWorkspaceId == null) {
             // Safety catch: If no workspace is cached, force them back to login
+            Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_SHORT).show();
             logoutUser();
             return;
         }
 
         binding.tvWorkspaceName.setText("Workspace: " + currentWorkspaceId);
 
-        // 2. Determine User Type & Setup UI
+        // 2. Determine User Type & Setup UI (Role-Based Access Control)
         determineUserRoleAndSetupUI();
 
         // Logout Button listener
@@ -81,11 +82,11 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void configureUIForRole(String role) {
-        // First, hide everything sensitive by default (Zero Trust)
-        binding.btnAddExpense.setVisibility(View.GONE);
-        binding.btnSendBroadcast.setVisibility(View.GONE);
-        binding.btnManageStaff.setVisibility(View.GONE);
-        binding.btnWorkspaceSettings.setVisibility(View.GONE);
+        // First, hide everything sensitive by default (Zero Trust Principle)
+        binding.btnAddExpense.setVisibility(View.GONE); // The Floating Action Button
+        binding.btnSendBroadcast.setVisibility(View.GONE); // The Broadcast Card
+        binding.btnManageStaff.setVisibility(View.GONE); // The Staff Management Card
+        binding.btnWorkspaceSettings.setVisibility(View.GONE); // The Settings Card
 
         // Then, reveal buttons based on their exact rank
         switch (role) {
@@ -119,8 +120,8 @@ public class DashboardActivity extends AppCompatActivity {
             firebaseAuth.signOut();
         }
         
-        // 2. Clear the cached workspace ID
-        UmmahConnectApp.getInstance().getPreferences().edit().clear().apply();
+        // 2. Clear the cached workspace ID so the next user doesn't load the wrong data
+        getSharedPreferences("UmmahPrefs", MODE_PRIVATE).edit().clear().apply();
         
         // 3. Return to Universal Login screen
         Intent intent = new Intent(this, StaffLoginActivity.class);
