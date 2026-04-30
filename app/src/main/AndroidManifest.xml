@@ -26,6 +26,7 @@
         <activity android:name=".ui.auth.StaffLoginActivity" />
         <activity android:name=".ui.auth.AdminLoginActivity" />
         <activity android:name=".ui.auth.PinGenerationActivity" />
+        <activity android:name=".ui.auth.RegisterCommunityActivity" /> 
 
         <activity android:name=".ui.main.DashboardActivity" />
 
