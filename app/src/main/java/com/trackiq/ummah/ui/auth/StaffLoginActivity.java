@@ -5,34 +5,24 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.trackiq.ummah.R;
 import com.trackiq.ummah.UmmahConnectApp;
-import com.trackiq.ummah.databinding.ActivityStaffLoginBinding;
+import com.trackiq.ummah.databinding.ActivityStaffLoginBinding; // Adjust if your binding name differs
 import com.trackiq.ummah.ui.main.DashboardActivity;
-import com.trackiq.ummah.utils.AuditLogger;
 
-/**
- * StaffLoginActivity - Workspace ID + PIN Authentication
- * * Features:
- * - Workspace ID lookup in Firebase
- * - Secure PIN validation
- * - Offline cache fallback
- * - PIN generation redirect if missing
- */
 public class StaffLoginActivity extends AppCompatActivity {
 
     private ActivityStaffLoginBinding binding;
-    private FirebaseDatabase database;
-    private UmmahConnectApp app;
-    private boolean isOfflineMode = false;
+    private FirebaseAuth firebaseAuth;
+    private DatabaseReference database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,214 +30,107 @@ public class StaffLoginActivity extends AppCompatActivity {
         binding = ActivityStaffLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        database = FirebaseDatabase.getInstance();
-        app = UmmahConnectApp.getInstance();
+        firebaseAuth = FirebaseAuth.getInstance();
+        database = FirebaseDatabase.getInstance().getReference();
 
-        isOfflineMode = getIntent().getBooleanExtra("offline_mode", false);
+        // 1. Handle the unified Secure Login button
+        binding.btnSecureLogin.setOnClickListener(v -> processUnifiedLogin());
 
-        setupUI();
-    }
-
-    private void setupUI() {
-        binding.btnLogin.setOnClickListener(v -> attemptLogin());
-        binding.btnGeneratePin.setOnClickListener(v -> {
-            startActivity(new Intent(this, PinGenerationActivity.class));
+        // 2. Handle the Registration Link
+        binding.tvRegisterCommunity.setOnClickListener(v -> {
+            startActivity(new Intent(StaffLoginActivity.this, RegisterCommunityActivity.class));
         });
-        binding.tvAdminLogin.setOnClickListener(v -> {
-            startActivity(new Intent(this, AdminLoginActivity.class));
-            finish();
+        
+        // (Optional) Forgot Password logic
+        binding.tvForgotPassword.setOnClickListener(v -> {
+            Toast.makeText(this, "Forgot Password flow coming soon", Toast.LENGTH_SHORT).show();
         });
-        binding.btnToggleMode.setOnClickListener(v -> toggleOfflineMode());
-
-        if (isOfflineMode) {
-            showOfflineModeUI();
-        }
     }
 
-    private void toggleOfflineMode() {
-        isOfflineMode = !isOfflineMode;
-        if (isOfflineMode) {
-            showOfflineModeUI();
-        } else {
-            showOnlineModeUI();
-        }
-    }
+    private void processUnifiedLogin() {
+        String primaryInput = binding.etWorkspaceOrEmail.getText().toString().trim();
+        String userId = binding.etUserId.getText().toString().trim();
+        String passwordOrPin = binding.etPasswordOrPin.getText().toString().trim();
 
-    private void showOfflineModeUI() {
-        binding.tvModeIndicator.setText(R.string.offline_mode);
-        binding.tvModeIndicator.setVisibility(View.VISIBLE);
-        binding.etWorkspaceId.setEnabled(false);
-        binding.etPin.setEnabled(false);
-        binding.btnLogin.setText(R.string.cache_login);
-
-        String cachedWorkspace = app.getPreferences().getString("staff_workspace", null);
-        if (cachedWorkspace != null) {
-            binding.etWorkspaceId.setText(cachedWorkspace);
-            binding.tvOfflineHint.setText("Cached: " + cachedWorkspace);
-            binding.tvOfflineHint.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void showOnlineModeUI() {
-        binding.tvModeIndicator.setVisibility(View.GONE);
-        binding.etWorkspaceId.setEnabled(true);
-        binding.etPin.setEnabled(true);
-        binding.btnLogin.setText(R.string.btn_login);
-        binding.tvOfflineHint.setVisibility(View.GONE);
-    }
-
-    private void attemptLogin() {
-        if (isOfflineMode) {
-            attemptOfflineLogin();
-        } else {
-            attemptOnlineLogin();
-        }
-    }
-
-    /**
-     * Online login with Firebase Realtime Database
-     */
-    private void attemptOnlineLogin() {
-        String workspaceId = binding.etWorkspaceId.getText().toString().trim();
-        String pin = binding.etPin.getText().toString().trim();
-
-        if (workspaceId.isEmpty() || pin.isEmpty()) {
-            Toast.makeText(this, "Enter Workspace ID and PIN", Toast.LENGTH_SHORT).show();
+        if (primaryInput.isEmpty() || passwordOrPin.isEmpty()) {
+            Toast.makeText(this, "Workspace/Email and Password/PIN are required", Toast.LENGTH_SHORT).show();
             return;
         }
 
         binding.progressBar.setVisibility(View.VISIBLE);
-        binding.btnLogin.setEnabled(false);
+        binding.btnSecureLogin.setEnabled(false);
 
-        DatabaseReference staffRef = database.getReference("staff").child(workspaceId);
-
-        staffRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                binding.progressBar.setVisibility(View.GONE);
-                binding.btnLogin.setEnabled(true);
-
-                if (!snapshot.exists()) {
-                    Toast.makeText(StaffLoginActivity.this, 
-                            "Workspace ID not found", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                String storedPin = snapshot.child("pin").getValue(String.class);
-                String staffName = snapshot.child("name").getValue(String.class);
-                Boolean isActive = snapshot.child("active").getValue(Boolean.class);
-
-                if (isActive != null && !isActive) {
-                    Toast.makeText(StaffLoginActivity.this, 
-                            "Account deactivated", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                if (storedPin == null) {
-                    // No PIN set - redirect to generation
-                    new AlertDialog.Builder(StaffLoginActivity.this)
-                            .setTitle("PIN Not Set")
-                            .setMessage("Generate a new PIN for this workspace?")
-                            .setPositiveButton("Generate", (d, w) -> {
-                                Intent intent = new Intent(StaffLoginActivity.this, 
-                                        PinGenerationActivity.class);
-                                intent.putExtra("workspace_id", workspaceId);
-                                startActivity(intent);
-                            })
-                            .setNegativeButton("Cancel", null)
-                            .show();
-                    return;
-                }
-
-                if (pin.equals(storedPin)) {
-                    // Success - cache and proceed
-                    cacheStaffCredentials(workspaceId, pin, staffName);
-
-                    AuditLogger.log(StaffLoginActivity.this, AuditLogger.ACTION_LOGIN, 
-                            "Staff login: " + workspaceId);
-
-                    startActivity(new Intent(StaffLoginActivity.this, 
-                            DashboardActivity.class));
-                    finish();
-                } else {
-                    Toast.makeText(StaffLoginActivity.this, 
-                            "Invalid PIN", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                binding.progressBar.setVisibility(View.GONE);
-                binding.btnLogin.setEnabled(true);
-
-                if (error.getCode() == DatabaseError.DISCONNECTED || 
-                    error.getCode() == DatabaseError.NETWORK_ERROR) {
-                    new AlertDialog.Builder(StaffLoginActivity.this)
-                            .setTitle("Network Error")
-                            .setMessage("Switch to offline mode?")
-                            .setPositiveButton("Offline Mode", (d, w) -> {
-                                isOfflineMode = true;
-                                showOfflineModeUI();
-                            })
-                            .setNegativeButton("Retry", null)
-                            .show();
-                } else {
-                    Toast.makeText(StaffLoginActivity.this, 
-                            "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
-
-    /**
-     * Offline login using cached credentials
-     */
-    private void attemptOfflineLogin() {
-        String cachedWorkspace = app.getPreferences().getString("staff_workspace", null);
-        String cachedPinHash = app.getPreferences().getString("staff_pin_hash", null);
-
-        if (cachedWorkspace == null || cachedPinHash == null) {
-            new AlertDialog.Builder(this)
-                    .setTitle("No Cache Available")
-                    .setMessage(R.string.error_offline_no_cache)
-                    .setPositiveButton("Go Online", (d, w) -> {
-                        isOfflineMode = false;
-                        showOnlineModeUI();
-                    })
-                    .show();
-            return;
-        }
-
-        String inputPin = binding.etPin.getText().toString().trim();
-        String inputHash = String.valueOf(inputPin.hashCode());
-
-        if (inputHash.equals(cachedPinHash)) {
-            app.setOfflineMode(true);
-            Toast.makeText(this, "Offline login successful", Toast.LENGTH_SHORT).show();
-
-            AuditLogger.log(this, AuditLogger.ACTION_LOGIN, 
-                    "Staff offline login: " + cachedWorkspace);
-
-            startActivity(new Intent(this, DashboardActivity.class));
-            finish();
+        // THE SWITCHBOARD LOGIC
+        if (primaryInput.contains("@")) {
+            // It's an Email -> Route to Admin Firebase Auth
+            loginAsAdmin(primaryInput, passwordOrPin);
         } else {
-            Toast.makeText(this, "Invalid cached PIN", Toast.LENGTH_SHORT).show();
+            // It's a Workspace ID -> Route to Staff Database Check
+            if (userId.isEmpty()) {
+                binding.progressBar.setVisibility(View.GONE);
+                binding.btnSecureLogin.setEnabled(true);
+                Toast.makeText(this, "User ID required for Staff login", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            loginAsStaff(primaryInput.toUpperCase(), userId, passwordOrPin);
         }
     }
 
-    private void cacheStaffCredentials(String workspaceId, String pin, String name) {
-        app.getPreferences().edit()
-                .putString("cached_user_type", "staff")
-                .putString("staff_workspace", workspaceId)
-                .putString("staff_pin_hash", String.valueOf(pin.hashCode()))
-                .putString("staff_name", name)
-                .putLong("cache_timestamp", System.currentTimeMillis())
-                .apply();
+    private void loginAsAdmin(String email, String password) {
+        firebaseAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        // Success! Proceed to dashboard
+                        Toast.makeText(StaffLoginActivity.this, "Welcome, Admin", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(StaffLoginActivity.this, DashboardActivity.class));
+                        finish();
+                    } else {
+                        // Failed Auth
+                        binding.progressBar.setVisibility(View.GONE);
+                        binding.btnSecureLogin.setEnabled(true);
+                        Toast.makeText(StaffLoginActivity.this, "Admin Login Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        binding = null;
+    private void loginAsStaff(String workspaceId, String userId, String pin) {
+        // Query the specific staff member in the database: /staff/MASJID-01/userId/
+        database.child("staff").child(workspaceId).child(userId)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        binding.progressBar.setVisibility(View.GONE);
+                        binding.btnSecureLogin.setEnabled(true);
+
+                        if (snapshot.exists()) {
+                            // Check if the PIN matches and account is active
+                            String dbPin = snapshot.child("pin").getValue(String.class);
+                            Boolean isActive = snapshot.child("active").getValue(Boolean.class);
+
+                            if (Boolean.TRUE.equals(isActive) && pin.equals(dbPin)) {
+                                // Cache the workspace ID so the dashboard knows what to load
+                                UmmahConnectApp.getInstance().getPreferences().edit()
+                                        .putString("current_workspace_id", workspaceId)
+                                        .putString("cached_user_type", "staff")
+                                        .apply();
+
+                                Toast.makeText(StaffLoginActivity.this, "Staff Login Successful", Toast.LENGTH_SHORT).show();
+                                startActivity(new Intent(StaffLoginActivity.this, DashboardActivity.class));
+                                finish();
+                            } else {
+                                Toast.makeText(StaffLoginActivity.this, "Invalid PIN or Inactive Account", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(StaffLoginActivity.this, "User ID not found in this Workspace", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        binding.progressBar.setVisibility(View.GONE);
+                        binding.btnSecureLogin.setEnabled(true);
+                        Toast.makeText(StaffLoginActivity.this, "Database Error", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 }
